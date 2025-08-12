@@ -1,22 +1,15 @@
 import React, { useState } from "react";
 
 const Login = ({ onRegisterClick, onLoginSuccess }) => {
-  const colors = {
-    primary: 'bg-indigo-600 hover:bg-indigo-700 text-white',
-    secondary: 'bg-white hover:bg-gray-100 text-indigo-600',
-    error: 'text-red-500 bg-red-50',
-    card: 'bg-white bg-opacity-90 backdrop-blur-sm',
-    text: 'text-gray-700',
-    header: 'text-blue-900' // header stays blue
-  };
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [googleEmail, setGoogleEmail] = useState("");
   const [error, setError] = useState("");
+  const [showGoogleLogin, setShowGoogleLogin] = useState(false);
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (!email.includes('@')) {
+    if (!email.includes("@")) {
       setError("Please enter a valid email");
       return;
     }
@@ -25,87 +18,118 @@ const Login = ({ onRegisterClick, onLoginSuccess }) => {
       return;
     }
     setError("");
-    onLoginSuccess();
+    const username = email.split('@')[0];
+    onLoginSuccess({ email, username });
+  };
+
+  const handleGoogleLogin = () => {
+    if (!googleEmail.includes("@")) {
+      setError("Please enter a valid Google email");
+      return;
+    }
+    setError("");
+    setShowGoogleLogin(false);
+    const username = googleEmail.split('@')[0];
+    onLoginSuccess({ email: googleEmail, username });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-200 to-blue-100 flex flex-col items-center justify-center p-4">
-      <h1 className={`text-3xl font-bold mb-2 ${colors.header}`}>Task Management System</h1>
-      <p className={`text-lg mb-8 ${colors.header}`}>Welcome back! Please log in</p>
+    <div className="min-vh-100 bg-light d-flex flex-column justify-content-center align-items-center py-4">
+      <h1 className="text-primary fw-bold mb-2">Task Management System</h1>
+      <p className="text-primary mb-4">Welcome back! Please log in</p>
 
-      <div className={`w-full max-w-md ${colors.card} rounded-xl shadow-xl p-8`}>
-        <form onSubmit={handleLogin} className="space-y-5">
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <label className={`block text-sm font-medium ${colors.text}`}>Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setError("");
-                }}
-                className={`w-full px-4 py-3 border ${
-                  error && !email.includes('@') ? 'border-red-500' : 'border-gray-300'
-                } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500`}
-                placeholder="your@email.com"
-              />
-            </div>
+      <div className="card shadow-lg p-4 w-100" style={{ maxWidth: "420px", background: 'rgba(255,255,255,0.95)' }}>
+        <form onSubmit={handleLogin}>
+          <div className="mb-3">
+            <label className="form-label">Email</label>
+            <input
+              type="email"
+              className={`form-control ${error && !email.includes("@") ? "is-invalid" : ""}`}
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError("");
+              }}
+              placeholder="your@email.com"
+            />
+          </div>
 
-            <div className="space-y-1">
-              <label className={`block text-sm font-medium ${colors.text}`}>Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  setError("");
-                }}
-                className={`w-full px-4 py-3 border ${
-                  error && password.length < 6 ? 'border-red-500' : 'border-gray-300'
-                } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500`}
-                placeholder="••••••••"
-              />
-            </div>
+          <div className="mb-3">
+            <label className="form-label">Password</label>
+            <input
+              type="password"
+              className={`form-control ${error && password.length < 6 ? "is-invalid" : ""}`}
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError("");
+              }}
+              placeholder="••••••••"
+            />
           </div>
 
           {error && (
-            <div className={`p-3 rounded-lg ${colors.error}`}>
+            <div className="alert alert-danger" role="alert">
               {error}
             </div>
           )}
 
-          <button
-            type="submit"
-            className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${colors.primary}`}
-          >
+          <button type="submit" className="btn btn-primary w-100 mb-3">
             Log In
           </button>
         </form>
 
-        <div className="flex items-center my-6">
-          <div className="flex-grow border-t border-gray-300"></div>
-          <span className="mx-4 text-gray-500">or</span>
-          <div className="flex-grow border-t border-gray-300"></div>
+        <div className="d-flex align-items-center mb-3">
+          <hr className="flex-grow-1" />
+          <span className="mx-2 text-muted">or</span>
+          <hr className="flex-grow-1" />
         </div>
 
         <button
           type="button"
-          className={`w-full py-3 px-4 rounded-lg font-medium transition-colors border border-gray-300 ${colors.secondary}`}
+          className="btn btn-outline-secondary w-100"
+          onClick={() => setShowGoogleLogin(true)}
         >
           Continue with Google
         </button>
 
-        <div className={`mt-6 text-center text-sm ${colors.text}`}>
+        <div className="text-center mt-4 text-muted">
           Don't have an account?{" "}
           <button
+            className="btn btn-link p-0 text-decoration-none text-primary"
             onClick={onRegisterClick}
-            className={`font-medium text-indigo-600 hover:text-indigo-800 hover:underline`}
           >
             Register here
           </button>
         </div>
       </div>
+
+      {showGoogleLogin && (
+        <div
+          className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
+          style={{ background: "rgba(0,0,0,0.5)" }}
+        >
+          <div className="card p-4" style={{ width: "350px" }}>
+            <h5 className="mb-3">Sign in with Google</h5>
+            <input
+              type="email"
+              className="form-control mb-3"
+              placeholder="Enter your Google email"
+              value={googleEmail}
+              onChange={(e) => setGoogleEmail(e.target.value)}
+            />
+            <button className="btn btn-primary w-100" onClick={handleGoogleLogin}>
+              Continue
+            </button>
+            <button
+              className="btn btn-link mt-2 text-danger"
+              onClick={() => setShowGoogleLogin(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,0 +1,31 @@
+.hover-row:hover {
+  background-color: #f8f9fa;
+}
+
+.task-table tr {
+  transition: background-color 0.2s ease;
+}
+
+.status-badge {
+  padding: 0.35em 0.65em;
+  font-size: 0.75em;
+  font-weight: 700;
+  border-radius: 0.25rem;
+}
+
+/* Status badge colors */
+.bg-warning {
+  background-color: #ffc107;
+}
+.bg-primary {
+  background-color: #0d6efd;
+  color: white;
+}
+.bg-success {
+  background-color: #198754;
+  color: white;
+}
+.bg-secondary {
+  background-color: #6c757d;
+  color: white;
+}

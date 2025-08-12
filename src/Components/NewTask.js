@@ -1,124 +1,180 @@
 import React, { useState } from "react";
 
-const NewTask = ({ onCreateTask, onCancel }) => {
+const NewTask = ({ onTaskCreated, onCancel, users }) => {
   const [taskData, setTaskData] = useState({
     title: "",
     description: "",
-    priority: "Medium",
+    priority: "MEDIUM",
     dueDate: "",
-    assignee: ""
+    assignedUserId: ""
   });
+
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setTaskData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setTaskData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
-  const handleSubmit = (e) => {
+  const validateForm = () => {
+    const newErrors = {};
+    if (!taskData.title) newErrors.title = "Task title is required";
+    if (!taskData.assignedUserId) newErrors.assignedUserId = "Assignee is required";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!taskData.title) {
-      alert("Task title is required");
-      return;
+    if (!validateForm()) return;
+
+    setLoading(true);
+
+    // Format due date
+    const dueDateISO = taskData.dueDate ? taskData.dueDate + "T00:00:00" : null;
+
+    const payload = {
+      title: taskData.title,
+      description: taskData.description,
+      priority: taskData.priority.toUpperCase(),
+      dueDate: dueDateISO,
+      assignedUser: { id: Number(taskData.assignedUserId) }
+    };
+
+    try {
+      const response = await fetch(
+        "http://localhost:8080/TaskManagement/TaskManagement/task/create",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      if (response.ok) {
+        const createdTask = await response.json();
+        alert("✅ Task created successfully!");
+        if (onTaskCreated) onTaskCreated(createdTask);
+      } else {
+        const errorText = await response.text();
+        alert("❌ Failed to create task: " + errorText);
+      }
+    } catch (error) {
+      alert("❌ Could not connect to server: " + error.message);
+    } finally {
+      setLoading(false);
     }
-    onCreateTask(taskData);
   };
 
   return (
-    <div className="min-h-screen bg-blue-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl bg-white rounded-xl shadow-md p-8">
-        <h1 className="text-2xl font-bold text-blue-900 mb-6">New Task</h1>
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Task Title */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Task Title</label>
-            <input
-              type="text"
-              name="title"
-              value={taskData.title}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="Enter task title"
-              required
-            />
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea
-              name="description"
-              value={taskData.description}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="Enter task description"
-              rows={3}
-            />
-          </div>
-
-          {/* Priority, Due Date, Assignee */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-              <select
-                name="priority"
-                value={taskData.priority}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="High">High</option>
-                <option value="Medium">Medium</option>
-                <option value="Low">Low</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+    <div className="container py-5 d-flex justify-content-center align-items-center min-vh-100 bg-light">
+      <div className="card shadow-lg w-100" style={{ maxWidth: "700px" }}>
+        <div className="card-body">
+          <h2 className="card-title text-center mb-4">New Task</h2>
+          <form onSubmit={handleSubmit}>
+            {/* Task Title */}
+            <div className="mb-3">
+              <label className="form-label">Task Title*</label>
               <input
-                type="date"
-                name="dueDate"
-                value={taskData.dueDate}
+                type="text"
+                name="title"
+                value={taskData.title}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="form-control"
               />
+              {errors.title && <small className="text-danger">{errors.title}</small>}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Assignee</label>
-              <select
-                name="assignee"
-                value={taskData.assignee}
+            {/* Description */}
+            <div className="mb-3">
+              <label className="form-label">Description</label>
+              <textarea
+                name="description"
+                value={taskData.description}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">Select assignee</option>
-                <option value="Masibuve">Masibuve</option>
-                <option value="Phihlello">Phihlello</option>
-                <option value="Team">Team</option>
-              </select>
+                className="form-control"
+                rows="3"
+              ></textarea>
             </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-4 pt-4">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-            >
-              Create Task
-            </button>
-          </div>
-        </form>
+            {/* Priority, Due Date, Assignee */}
+            <div className="row mb-3">
+              <div className="col-md-4">
+                <label className="form-label">Priority</label>
+                <select
+                  name="priority"
+                  value={taskData.priority}
+                  onChange={handleChange}
+                  className="form-select"
+                >
+                  <option value="HIGH">High</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="LOW">Low</option>
+                </select>
+              </div>
+
+              <div className="col-md-4">
+                <label className="form-label">Due Date</label>
+                <input
+                  type="date"
+                  name="dueDate"
+                  value={taskData.dueDate}
+                  onChange={handleChange}
+                  className="form-control"
+                />
+              </div>
+
+              <div className="col-md-4">
+                <label className="form-label">Assignee*</label>
+                <select
+                  name="assignedUserId"
+                  value={taskData.assignedUserId}
+                  onChange={handleChange}
+                  className="form-select"
+                >
+                  <option value="">Select assignee</option>
+                  {users && users.length > 0 ? (
+                    users.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.firstname} {user.surname}
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="1">Masibuve</option>
+                      <option value="2">Phihlello</option>
+                      <option value="3">Team</option>
+                    </>
+                  )}
+                </select>
+                {errors.assignedUserId && (
+                  <small className="text-danger">{errors.assignedUserId}</small>
+                )}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="d-flex justify-content-end">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="btn btn-outline-secondary me-2"
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary" disabled={loading}>
+                {loading ? "Saving..." : "Create Task"}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

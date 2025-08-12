@@ -1,9 +1,12 @@
 import React, { useState } from "react";
+import "./TaskList.css";
 
-const TaskList = ({ tasks, onLogout, onNewTask }) => {
+const TaskList = ({ tasks, onLogout, onNewTask, onViewTask, onUpdateTask }) => {
   const [filter, setFilter] = useState("All");
   const [sortBy, setSortBy] = useState("dueDate");
   const [searchQuery, setSearchQuery] = useState("");
+  const [editingTaskId, setEditingTaskId] = useState(null);
+  const [newStatus, setNewStatus] = useState("");
 
   const filteredTasks = tasks.filter(task => {
     const matchesFilter = filter === "All" || task.status === filter;
@@ -18,114 +21,177 @@ const TaskList = ({ tasks, onLogout, onNewTask }) => {
     return a.title.localeCompare(b.title);
   });
 
-  const getStatusColor = (status) => {
+  const getStatusBadge = (status) => {
+    let badgeClass = "status-badge ";
     switch(status) {
-      case "In Progress": return "bg-yellow-100 text-yellow-800";
-      case "To Do": return "bg-blue-100 text-blue-800";
-      case "Done": return "bg-green-100 text-green-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "To Do":
+        badgeClass += "bg-warning text-dark";
+        break;
+      case "In Progress":
+        badgeClass += "bg-primary";
+        break;
+      case "Done":
+        badgeClass += "bg-success";
+        break;
+      default:
+        badgeClass += "bg-secondary";
     }
+    return (
+      <span className={`${badgeClass} badge`}>{status}</span>
+    );
+  };
+
+  const handleEditClick = (task) => {
+    setEditingTaskId(task.id);
+    setNewStatus(task.status);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTaskId(null);
+    setNewStatus("");
+  };
+
+  const handleSaveEdit = (task) => {
+    // Call the onUpdateTask prop with updated status
+    onUpdateTask({ ...task, status: newStatus });
+    setEditingTaskId(null);
+    setNewStatus("");
   };
 
   return (
-    <div className="min-h-screen bg-blue-50 p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header with New Task button */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-900">Task List</h1>
-          <div className="flex space-x-4">
-            <button 
-              onClick={onNewTask}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center"
-            >
-              <span className="text-xl mr-1">+</span> New Task
-            </button>
-            <button 
-              onClick={onLogout}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
-            >
-              Logout
-            </button>
-          </div>
+    <div className="container py-5 bg-light min-vh-100">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h2 className="fw-bold">Task List</h2>
+        <div className="d-flex gap-2">
+          <button 
+            className="btn btn-primary d-flex align-items-center" 
+            onClick={onNewTask}
+          >
+            <span className="me-2 fs-5">+</span> New Task
+          </button>
+          <button className="btn btn-danger" onClick={onLogout}>Logout</button>
         </div>
+      </div>
 
-        {/* Controls */}
-        <div className="flex flex-wrap justify-between items-center mb-6 gap-4 bg-white p-4 rounded-lg shadow-sm">
-          <div className="flex items-center space-x-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Filter by</label>
-              <select 
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                className="bg-white border border-gray-300 rounded-md px-3 py-2"
-              >
-                <option value="All">All</option>
-                <option value="To Do">To Do</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Done">Done</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Sort by</label>
-              <select 
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="bg-white border border-gray-300 rounded-md px-3 py-2"
-              >
-                <option value="dueDate">Due Date</option>
-                <option value="title">Title</option>
-              </select>
-            </div>
+      {/* Controls */}
+      <div className="card p-3 mb-4">
+        <div className="row g-3">
+          <div className="col-md-4">
+            <label className="form-label">Filter by</label>
+            <select 
+              className="form-select" 
+              value={filter} 
+              onChange={e => setFilter(e.target.value)}
+            >
+              <option value="All">All</option>
+              <option value="To Do">To Do</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Done">Done</option>
+            </select>
           </div>
 
-          <div className="flex-1 max-w-md">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+          <div className="col-md-4">
+            <label className="form-label">Sort by</label>
+            <select 
+              className="form-select" 
+              value={sortBy} 
+              onChange={e => setSortBy(e.target.value)}
+            >
+              <option value="dueDate">Due Date</option>
+              <option value="title">Title</option>
+            </select>
+          </div>
+
+          <div className="col-md-4">
+            <label className="form-label">Search</label>
             <input
               type="text"
+              className="form-control"
               placeholder="Search tasks..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white border border-gray-300 rounded-md px-3 py-2"
+              onChange={e => setSearchQuery(e.target.value)}
             />
           </div>
         </div>
+      </div>
 
-        {/* Task Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+      {/* Table */}
+      <div className="card">
+        <div className="table-responsive">
+          <table className="table task-table">
+            <thead className="table-light">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                <th>Title</th>
+                <th>Status</th>
+                <th>Due Date</th>
+                <th>Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody>
               {sortedTasks.map((task) => (
-                <tr key={task.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{task.title}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(task.status)}`}>
-                      {task.status}
-                    </span>
+                <tr key={task.id}>
+                  <td>{task.title}</td>
+                  <td>
+                    {editingTaskId === task.id ? (
+                      <select
+                        value={newStatus}
+                        onChange={e => setNewStatus(e.target.value)}
+                        className="form-select"
+                      >
+                        <option value="To Do">To Do</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Done">Done</option>
+                      </select>
+                    ) : (
+                      getStatusBadge(task.status)
+                    )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {task.dueDate || "No due date"}
+                  <td>{task.dueDate || "No due date"}</td>
+                  <td>
+                    {editingTaskId === task.id ? (
+                      <>
+                        <button 
+                          className="btn btn-sm btn-success me-2"
+                          onClick={() => handleSaveEdit(task)}
+                        >
+                          Save
+                        </button>
+                        <button 
+                          className="btn btn-sm btn-secondary"
+                          onClick={handleCancelEdit}
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button 
+                          className="btn btn-sm btn-info me-2"
+                          onClick={() => onViewTask(task)}
+                        >
+                          View Details
+                        </button>
+                        <button
+                          className="btn btn-sm btn-warning"
+                          onClick={() => handleEditClick(task)}
+                        >
+                          Edit
+                        </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-
-        {/* Empty State */}
-        {sortedTasks.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No tasks found. Create your first task!</p>
-          </div>
-        )}
       </div>
+
+      {sortedTasks.length === 0 && (
+        <div className="card text-center mt-4 p-4">
+          <p className="text-muted mb-0">No tasks found matching your criteria</p>
+        </div>
+      )}
     </div>
   );
 };
