@@ -3,6 +3,7 @@ import React, { useState } from "react";
 const Login = ({ onRegisterClick, onLoginSuccess }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [profileType, setProfileType] = useState("user");
   const [googleEmail, setGoogleEmail] = useState("");
   const [error, setError] = useState("");
   const [showGoogleLogin, setShowGoogleLogin] = useState(false);
@@ -19,7 +20,7 @@ const Login = ({ onRegisterClick, onLoginSuccess }) => {
     }
     setError("");
     const username = email.split('@')[0];
-    onLoginSuccess({ email, username });
+    onLoginSuccess({ email, username, profileType });
   };
 
   const handleGoogleLogin = () => {
@@ -30,7 +31,7 @@ const Login = ({ onRegisterClick, onLoginSuccess }) => {
     setError("");
     setShowGoogleLogin(false);
     const username = googleEmail.split('@')[0];
-    onLoginSuccess({ email: googleEmail, username });
+    onLoginSuccess({ email: googleEmail, username, profileType });
   };
 
   return (
@@ -40,6 +41,18 @@ const Login = ({ onRegisterClick, onLoginSuccess }) => {
 
       <div className="card shadow-lg p-4 w-100" style={{ maxWidth: "420px", background: 'rgba(255,255,255,0.95)' }}>
         <form onSubmit={handleLogin}>
+          <div className="mb-3">
+            <label className="form-label">Login As</label>
+            <select
+              className="form-select"
+              value={profileType}
+              onChange={(e) => setProfileType(e.target.value)}
+            >
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
           <div className="mb-3">
             <label className="form-label">Email</label>
             <input
@@ -75,7 +88,7 @@ const Login = ({ onRegisterClick, onLoginSuccess }) => {
           )}
 
           <button type="submit" className="btn btn-primary w-100 mb-3">
-            Log In
+            Log In as {profileType === "user" ? "User" : "Admin"}
           </button>
         </form>
 
