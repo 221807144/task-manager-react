@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const Dashboard = ({ tasks, user, onNavigate, onLogout }) => {
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+
   const stats = {
     totalTasks: tasks.length,
     completedTasks: tasks.filter(task => task.status === 'Done').length,
@@ -18,13 +20,75 @@ const Dashboard = ({ tasks, user, onNavigate, onLogout }) => {
           <p className="lead">Welcome back, {user?.name || user?.username}!</p>
           {user?.email && <small className="text-muted">{user.email}</small>}
         </div>
-        <div className="col-auto">
+        <div className="col-auto position-relative">
+          <button 
+            className="btn btn-light border rounded-circle p-0 me-2"
+            style={{ width: '45px', height: '45px', fontSize: '18px' }}
+            onClick={() => setShowUserDropdown(!showUserDropdown)}
+          >
+            <i className="bi bi-person-circle"></i>
+          </button>
           <button 
             className="btn btn-outline-danger"
             onClick={onLogout}
           >
             <i className="bi bi-box-arrow-right me-2"></i>Logout
           </button>
+
+          {showUserDropdown && (
+            <div 
+              className="position-absolute bg-white border rounded shadow-lg p-3"
+              style={{ 
+                top: '55px', 
+                right: '0', 
+                width: '300px', 
+                zIndex: 1000 
+              }}
+            >
+              <div className="text-center mb-3">
+                <div 
+                  className="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2"
+                  style={{ width: '60px', height: '60px', fontSize: '24px' }}
+                >
+                  {user?.name?.charAt(0) || user?.username?.charAt(0) || 'U'}
+                </div>
+                <h6 className="mb-0">{user?.name || user?.username}</h6>
+                <small className="text-muted">@{user?.username}</small>
+                <div className="mt-2">
+                  <span className={`badge ${user?.profileType === 'admin' ? 'bg-danger' : 'bg-primary'}`}>
+                    {user?.profileType === 'admin' ? 'Admin' : 'User'}
+                  </span>
+                </div>
+              </div>
+              <hr />
+              <div className="mb-2">
+                <small className="text-muted">Email</small>
+                <p className="mb-0 small">{user?.email}</p>
+              </div>
+              {user?.phone && (
+                <div className="mb-2">
+                  <small className="text-muted">Phone</small>
+                  <p className="mb-0 small">{user?.phone}</p>
+                </div>
+              )}
+              {user?.studentNumber && (
+                <div className="mb-2">
+                  <small className="text-muted">Student Number</small>
+                  <p className="mb-0 small">{user?.studentNumber}</p>
+                </div>
+              )}
+              <hr />
+              <button 
+                className="btn btn-primary btn-sm w-100"
+                onClick={() => {
+                  setShowUserDropdown(false);
+                  onNavigate('profile');
+                }}
+              >
+                <i className="bi bi-pencil me-2"></i>Edit Profile
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
