@@ -6,6 +6,7 @@ import TaskList from "./Components/TaskList";
 import NewTask from "./Components/NewTask";
 import TaskDetails from './Components/TaskDetails';
 
+
 const App = () => {
   const [currentView, setCurrentView] = useState('login');
   const [tasks, setTasks] = useState([]);
@@ -74,6 +75,7 @@ const App = () => {
     setCurrentView('taskdetails');
   };
 
+
   const views = {
     login: <Login 
              onRegisterClick={() => setCurrentView('register')} 
@@ -105,6 +107,7 @@ const App = () => {
                    onSave={handleUpdateTask}
                  />
   };
+  
 
   return (
     <div className="min-h-screen bg-gray-100">
