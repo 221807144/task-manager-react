@@ -1,119 +1,242 @@
 import React, { useState, useEffect } from "react";
-import Login from "./Components/Login";
-import Register from "./Components/Register";
-import Dashboard from "./Components/Dashboard";
-import TaskList from "./Components/TaskList";
-import NewTask from "./Components/NewTask";
-import TaskDetails from './Components/TaskDetails';
-
+import axios from "axios";
+import Login from "./components/Login";
+import Register from "./components/Register";
+import AdminRegister from "./components/AdminRegister";
+import Dashboard from "./components/Dashboard";
+import AdminDashboard from "./components/AdminDashboard";
+import UserManagement from "./components/UserManagement";
+import AdminManagement from "./components/AdminManagement";
+import UserProfile from "./components/UserProfile";
+import NewTask from "./components/NewTask";
+import TaskList from "./components/TaskList";
+import TaskDetails from "./components/TaskDetails";
+import "./App.css";
 
 const App = () => {
-  const [currentView, setCurrentView] = useState('login');
-  const [tasks, setTasks] = useState([]);
-  const [selectedTask, setSelectedTask] = useState(null);
+  const [currentView, setCurrentView] = useState("login");
   const [currentUser, setCurrentUser] = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const sampleTasks = [
-      {
-        id: 1,
-        title: "Complete project proposal",
-        description: "Finish the project proposal document",
-        status: "In Progress",
-        priority: "High",
-        dueDate: new Date().toISOString().split('T')[0],
-        assignee: "John Doe",
-        comments: ["First draft completed"],
-        attachments: ["proposal.docx"]
-      },
-      {
-        id: 2,
-        title: "Setup database",
-        description: "Configure the database schema",
-        status: "To Do",
-        priority: "Medium",
-        dueDate: "2023-06-15",
-        assignee: "Jane Smith",
-        comments: [],
-        attachments: []
-      }
-    ];
-    setTasks(sampleTasks);
-  }, []);
-
-  const handleCreateTask = (newTask) => {
-    const createdTask = {
-      ...newTask,
-      id: Date.now(),
-      status: "To Do",
-      comments: [],
-      attachments: []
-    };
-    setTasks([...tasks, createdTask]);
-    setCurrentView('dashboard');
-  };
-
-  const handleUpdateTask = (updatedTask) => {
-    setTasks(tasks.map(task => 
-      task.id === updatedTask.id ? updatedTask : task
-    ));
-    setCurrentView('dashboard');
-  };
+  // API Base URLs
+  const TASK_API_BASE = "http://localhost:8080/TaskManagement/TaskManagement/task";
+  const USER_API_BASE = "http://localhost:8080/TaskManagement/TaskManagement/user";
+  const ADMIN_API_BASE = "http://localhost:8080/TaskManagement/api/admins";
 
   const handleLoginSuccess = (userData) => {
     setCurrentUser(userData);
-    setCurrentView('dashboard');
+    setCurrentView("dashboard");
+    fetchTasks();
+    if (userData.profileType === "admin") {
+      fetchUsers();
+    }
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
-    setCurrentView('login');
+    setTasks([]);
+    setUsers([]);
+    setCurrentView("login");
   };
 
-  const handleViewTask = (task) => {
-    setSelectedTask(task);
-    setCurrentView('taskdetails');
+  const handleUpdateProfile = (updatedProfile) => {
+    setCurrentUser((prev) => ({ ...prev, ...updatedProfile }));
   };
 
-
-  const views = {
-    login: <Login 
-             onRegisterClick={() => setCurrentView('register')} 
-             onLoginSuccess={handleLoginSuccess} 
-           />,
-    register: <Register 
-                onLoginClick={() => setCurrentView('login')} 
-                onRegisterSuccess={handleLoginSuccess} 
-              />,
-    dashboard: <Dashboard 
-                 tasks={tasks} 
-                 user={currentUser}
-                 onNavigate={(view) => setCurrentView(view)}
-                 onLogout={handleLogout}
-               />,
-    tasklist: <TaskList 
-                tasks={tasks} 
-                onLogout={handleLogout}
-                onNewTask={() => setCurrentView('newtask')}
-                onViewTask={handleViewTask}
-              />,
-    newtask: <NewTask 
-               onCreateTask={handleCreateTask} 
-               onCancel={() => setCurrentView('dashboard')} 
-             />,
-    taskdetails: <TaskDetails 
-                   task={selectedTask} 
-                   onBack={() => setCurrentView('dashboard')}
-                   onSave={handleUpdateTask}
-                 />
+  const handleTaskCreated = (newTask) => {
+    setTasks((prev) => [...prev, newTask]);
+    setCurrentView("tasklist");
   };
-  
 
-  return (
-    <div className="min-h-screen bg-gray-100">
-      {views[currentView]}
-    </div>
-  );
+  const fetchTasks = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${TASK_API_BASE}/all`);
+      const transformedTasks = response.data.map((task) => ({
+        ...task,
+        assignee: task.assignedUser
+          ? `${task.assignedUser.Firstname} ${task.assignedUser.surname}`
+          : "Unassigned",
+        status: task.status || "TODO",
+        priority: task.priority || "MEDIUM",
+      }));
+      setTasks(transformedTasks);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+      setTasks([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get(`${USER_API_BASE}/getAll`);
+      const transformedUsers = response.data.map((user) => ({
+        ...user,
+        fullName: `${user.Firstname} ${user.surname}`,
+        active: user.active !== undefined ? user.active : true,
+      }));
+      setUsers(transformedUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      setUsers([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  useEffect(() => {
+    if (currentUser?.profileType === "admin") {
+      fetchUsers();
+    }
+  }, [currentUser]);
+
+  const handleUpdateTask = async (updatedTask) => {
+    try {
+      await axios.put(`${TASK_API_BASE}/update`, updatedTask);
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id === updatedTask.id
+            ? {
+                ...updatedTask,
+                assignee: updatedTask.assignedUser
+                  ? `${updatedTask.assignedUser.Firstname} ${updatedTask.assignedUser.surname}`
+                  : "Unassigned",
+              }
+            : task
+        )
+      );
+    } catch (error) {
+      console.error("Error updating task:", error);
+      alert("Failed to update task. Please try again.");
+    }
+  };
+
+  const handleDeleteTask = async (taskId) => {
+    try {
+      await axios.delete(`${TASK_API_BASE}/delete/${taskId}`);
+      setTasks((prev) => prev.filter((task) => task.id !== taskId));
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      alert("Failed to delete task. Please try again.");
+    }
+  };
+
+  const handleUserUpdate = () => {
+    if (currentUser?.profileType === "admin") fetchUsers();
+  };
+
+  const renderCurrentView = () => {
+    if (loading && currentView === "dashboard") {
+      return (
+        <div className="container py-5 text-center">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p className="mt-2">Loading dashboard...</p>
+        </div>
+      );
+    }
+
+    switch (currentView) {
+      case "login":
+        return (
+          <Login
+            onLoginSuccess={handleLoginSuccess}
+            onRegisterClick={() => setCurrentView("register")}
+            onAdminRegisterClick={() => setCurrentView("adminregister")}
+          />
+        );
+      case "register":
+        return (
+          <Register
+            onRegisterSuccess={() => {
+              alert("Registration successful! Please login with your credentials.");
+              setCurrentView("login");
+            }}
+            onLoginClick={() => setCurrentView("login")}
+          />
+        );
+      case "adminregister":
+        return (
+          <AdminRegister
+            onRegisterSuccess={() => {
+              alert("Admin registration successful! Please login.");
+              setCurrentView("login");
+            }}
+            onLoginClick={() => setCurrentView("login")}
+          />
+        );
+      case "dashboard":
+        if (currentUser?.profileType === "admin") {
+          return (
+            <AdminDashboard
+              user={currentUser}
+              onNavigate={setCurrentView}
+              onLogout={handleLogout}
+              tasks={tasks}
+              users={users}
+            />
+          );
+        } else {
+          return (
+            <Dashboard
+              user={currentUser}
+              onNavigate={setCurrentView}
+              onLogout={handleLogout}
+              tasks={tasks}
+            />
+          );
+        }
+      case "usermanagement":
+        return <UserManagement onBack={() => setCurrentView("dashboard")} onUserUpdate={handleUserUpdate} />;
+      case "adminmanagement":
+        return <AdminManagement onBack={() => setCurrentView("dashboard")} />;
+      case "profile":
+        return <UserProfile user={currentUser} onNavigate={setCurrentView} onUpdateProfile={handleUpdateProfile} />;
+      case "newtask":
+        return <NewTask onTaskCreated={handleTaskCreated} onCancel={() => setCurrentView("dashboard")} users={users} />;
+      case "tasklist":
+        return (
+          <TaskList
+            tasks={tasks}
+            onLogout={handleLogout}
+            onNewTask={() => setCurrentView("newtask")}
+            onViewTask={(task) => console.log("View task details:", task)}
+            onUpdateTask={handleUpdateTask}
+            onDeleteTask={handleDeleteTask}
+            onRefresh={fetchTasks}
+          />
+        );
+      case "taskdetails":
+        return (
+          <TaskDetails
+            task={tasks.find((task) => task.id === currentUser?.selectedTaskId) || tasks[0]}
+            onBack={() => setCurrentView("tasklist")}
+            onSave={handleUpdateTask}
+            onDelete={(taskId) => {
+              handleDeleteTask(taskId);
+              setCurrentView("tasklist");
+            }}
+          />
+        );
+      default:
+        return (
+          <Login
+            onLoginSuccess={handleLoginSuccess}
+            onRegisterClick={() => setCurrentView("register")}
+            onAdminRegisterClick={() => setCurrentView("adminregister")}
+          />
+        );
+    }
+  };
+
+  return <div className="App">{renderCurrentView()}</div>;
 };
 
 export default App;

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
+import axios from "axios";
 
-const Login = ({ onRegisterClick, onLoginSuccess }) => {
+const Login = ({ onRegisterClick, onAdminRegisterClick, onLoginSuccess }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [profileType, setProfileType] = useState("user");
@@ -8,7 +9,7 @@ const Login = ({ onRegisterClick, onLoginSuccess }) => {
   const [error, setError] = useState("");
   const [showGoogleLogin, setShowGoogleLogin] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     if (!email.includes("@")) {
       setError("Please enter a valid email");
@@ -19,8 +20,24 @@ const Login = ({ onRegisterClick, onLoginSuccess }) => {
       return;
     }
     setError("");
-    const username = email.split('@')[0];
-    onLoginSuccess({ email, username, profileType });
+
+    try {
+      const endpoint =
+        profileType === "user"
+          ? "http://localhost:8080/TaskManagement/TaskManagement/user/login"
+          : "http://localhost:8080/TaskManagement/api/admins/login";
+
+      await axios.post(endpoint, { email, password });
+
+      const username = email.split("@")[0];
+      onLoginSuccess({ email, username, profileType });
+    } catch (err) {
+      if (err.response && err.response.data) {
+        setError(typeof err.response.data === "object" ? JSON.stringify(err.response.data) : err.response.data);
+      } else {
+        setError("Login failed. Please try again.");
+      }
+    }
   };
 
   const handleGoogleLogin = () => {
@@ -30,7 +47,7 @@ const Login = ({ onRegisterClick, onLoginSuccess }) => {
     }
     setError("");
     setShowGoogleLogin(false);
-    const username = googleEmail.split('@')[0];
+    const username = googleEmail.split("@")[0];
     onLoginSuccess({ email: googleEmail, username, profileType });
   };
 
@@ -92,6 +109,14 @@ const Login = ({ onRegisterClick, onLoginSuccess }) => {
           </button>
         </form>
 
+        {profileType === "admin" && (
+          <div className="mb-3 text-center">
+            <button className="btn btn-link text-success p-0" onClick={onAdminRegisterClick}>
+              Register as Admin
+            </button>
+          </div>
+        )}
+
         <div className="d-flex align-items-center mb-3">
           <hr className="flex-grow-1" />
           <span className="mx-2 text-muted">or</span>
@@ -106,15 +131,17 @@ const Login = ({ onRegisterClick, onLoginSuccess }) => {
           Continue with Google
         </button>
 
-        <div className="text-center mt-4 text-muted">
-          Don't have an account?{" "}
-          <button
-            className="btn btn-link p-0 text-decoration-none text-primary"
-            onClick={onRegisterClick}
-          >
-            Register here
-          </button>
-        </div>
+        {profileType === "user" && (
+          <div className="text-center mt-4 text-muted">
+            Don't have an account?{" "}
+            <button
+              className="btn btn-link p-0 text-decoration-none text-primary"
+              onClick={onRegisterClick}
+            >
+              Register here
+            </button>
+          </div>
+        )}
       </div>
 
       {showGoogleLogin && (

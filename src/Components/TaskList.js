@@ -24,21 +24,21 @@ const TaskList = ({ tasks, onLogout, onNewTask, onViewTask, onUpdateTask }) => {
   const getStatusBadge = (status) => {
     let badgeClass = "status-badge ";
     switch(status) {
-      case "To Do":
+      case "TODO":
         badgeClass += "bg-warning text-dark";
         break;
-      case "In Progress":
+      case "IN_PROGRESS":
         badgeClass += "bg-primary";
         break;
-      case "Done":
+      case "DONE":
         badgeClass += "bg-success";
         break;
       default:
         badgeClass += "bg-secondary";
     }
-    return (
-      <span className={`${badgeClass} badge`}>{status}</span>
-    );
+    let label = status.replace("_", " ").toLowerCase()
+                      .replace(/\b\w/g, l => l.toUpperCase()); // Friendly label
+    return <span className={`${badgeClass} badge`}>{label}</span>;
   };
 
   const handleEditClick = (task) => {
@@ -52,7 +52,6 @@ const TaskList = ({ tasks, onLogout, onNewTask, onViewTask, onUpdateTask }) => {
   };
 
   const handleSaveEdit = (task) => {
-    // Call the onUpdateTask prop with updated status
     onUpdateTask({ ...task, status: newStatus });
     setEditingTaskId(null);
     setNewStatus("");
@@ -63,10 +62,7 @@ const TaskList = ({ tasks, onLogout, onNewTask, onViewTask, onUpdateTask }) => {
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2 className="fw-bold">Task List</h2>
         <div className="d-flex gap-2">
-          <button 
-            className="btn btn-primary d-flex align-items-center" 
-            onClick={onNewTask}
-          >
+          <button className="btn btn-primary d-flex align-items-center" onClick={onNewTask}>
             <span className="me-2 fs-5">+</span> New Task
           </button>
           <button className="btn btn-danger" onClick={onLogout}>Logout</button>
@@ -84,9 +80,9 @@ const TaskList = ({ tasks, onLogout, onNewTask, onViewTask, onUpdateTask }) => {
               onChange={e => setFilter(e.target.value)}
             >
               <option value="All">All</option>
-              <option value="To Do">To Do</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Done">Done</option>
+              <option value="TODO">To Do</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="DONE">Done</option>
             </select>
           </div>
 
@@ -138,9 +134,9 @@ const TaskList = ({ tasks, onLogout, onNewTask, onViewTask, onUpdateTask }) => {
                         onChange={e => setNewStatus(e.target.value)}
                         className="form-select"
                       >
-                        <option value="To Do">To Do</option>
-                        <option value="In Progress">In Progress</option>
-                        <option value="Done">Done</option>
+                        <option value="TODO">To Do</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="DONE">Done</option>
                       </select>
                     ) : (
                       getStatusBadge(task.status)
